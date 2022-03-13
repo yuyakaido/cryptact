@@ -1,3 +1,6 @@
+package bybit
+
+import common.Security
 import kotlinx.serialization.ExperimentalSerializationApi
 import okhttp3.Interceptor
 import okhttp3.Response

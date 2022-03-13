@@ -1,3 +1,4 @@
+import bybit.BybitDownloader
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.system.exitProcess

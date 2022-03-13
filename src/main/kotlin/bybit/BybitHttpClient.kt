@@ -1,3 +1,5 @@
+package bybit
+
 import kotlinx.serialization.json.JsonElement
 import retrofit2.http.GET
 
