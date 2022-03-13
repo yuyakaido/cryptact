@@ -36,7 +36,20 @@ object BybitDownloader {
     private val service = retrofit.create(BybitHttpClient::class.java)
 
     suspend fun downloadExchangeRecords(): List<ExchangeRecord> {
-        return service.getExchangeHistory().toExchangeRecords()
+        val responses = mutableListOf<ExchangeHistoryResponse>()
+        var from: Long? = null
+        while (true) {
+            val response = service.getExchangeHistory(from = from)
+            responses.add(response)
+            if (response.result.size < 50) {
+                break
+            } else {
+                from = response.result.last().id
+            }
+        }
+        return responses
+            .flatMap { it.toExchangeRecords() }
+            .distinctBy { it.exchangedAt }
     }
 
 }

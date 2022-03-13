@@ -2,6 +2,7 @@
 /.gradle
 /.idea
 /build
+/inputs
 /outputs
 
 # Files
