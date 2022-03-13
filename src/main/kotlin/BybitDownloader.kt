@@ -9,10 +9,14 @@ import retrofit2.Retrofit
 @ExperimentalSerializationApi
 object BybitDownloader {
 
+    private val apiKey = System.getProperty("BYBIT_API_KEY")
+    private val apiSecret = System.getProperty("BYBIT_API_SECRET")
+
     private val httpLoggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.NONE
     }
     private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(BybitHttpInterceptor(apiKey, apiSecret))
         .addInterceptor(httpLoggingInterceptor)
         .build()
     private val json = Json { ignoreUnknownKeys = true }
@@ -24,7 +28,7 @@ object BybitDownloader {
     private val service = retrofit.create(BybitHttpClient::class.java)
 
     suspend fun execute() {
-        val response = service.getSymbols()
+        val response = service.getExchangeHistory()
         println(response)
     }
 
