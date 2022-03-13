@@ -1,4 +1,4 @@
-import bybit.BybitDownloader
+import bybit.BybitService
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.system.exitProcess
@@ -7,7 +7,7 @@ import kotlin.system.exitProcess
 fun main() {
     runBlocking {
         println("Started!")
-        BybitDownloader.execute()
+        BybitService.execute()
         println("Completed!")
         exitProcess(0)
     }

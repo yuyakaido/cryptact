@@ -1,8 +1,11 @@
 package bybit
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import common.BigDecimalSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.serializersModuleOf
+import model.ExchangeRecord
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -21,7 +24,10 @@ object BybitDownloader {
         .addInterceptor(BybitHttpInterceptor(apiKey, apiSecret))
         .addInterceptor(httpLoggingInterceptor)
         .build()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        serializersModule = serializersModuleOf(BigDecimalSerializer)
+    }
     private val retrofit = Retrofit.Builder()
         .client(okHttpClient)
         .baseUrl("https://api.bybit.com/")
@@ -29,9 +35,8 @@ object BybitDownloader {
         .build()
     private val service = retrofit.create(BybitHttpClient::class.java)
 
-    suspend fun execute() {
-        val response = service.getExchangeHistory()
-        println(response)
+    suspend fun downloadExchangeRecords(): List<ExchangeRecord> {
+        return service.getExchangeHistory().toExchangeRecords()
     }
 
 }
