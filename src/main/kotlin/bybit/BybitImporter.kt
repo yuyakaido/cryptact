@@ -1,7 +1,7 @@
 package bybit
 
 import model.Asset
-import model.DistributionRecord
+import model.EarnRecord
 import java.io.File
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -11,125 +11,65 @@ import java.time.format.DateTimeFormatter
 
 object BybitImporter {
 
-    private val inputDirectory = File("${System.getProperty("user.dir")}/inputs")
+    private val inputDirectory = File("${System.getProperty("user.dir")}/inputs/bybit")
+    private val earnDirectory = File("${inputDirectory.path}/earn")
+    private val airdropDirectory = File("${inputDirectory}/airdrop")
+    private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
-    fun importFlexibleStakingRecords(): List<DistributionRecord> {
-        val file = File("${inputDirectory.path}/bybit_flexible_staking_history.csv")
-        val lines = file.readLines()
-        val header = lines.first()
-        val headers = header.split(",")
-        val records = lines.subList(1, lines.size)
+    private fun importEarnRecords(product: BybitEarnProduct): List<EarnRecord> {
+        return earnDirectory.listFiles()?.flatMap { file ->
+            val lines = file.readLines()
+            val header = lines.first()
+            val headers = header.split(",")
+            val records = lines.subList(1, lines.size)
 
-        val assetEarnedIndex = headers.indexOf("Asset Earned")
-        val yieldIndex = headers.indexOf("Yield")
-        val distributionTimeIndex = headers.indexOf("Distribution Time (UTC)")
+            val utcTimeIndex = headers.indexOf("UTC_TIME")
+            val operationIndex = headers.indexOf("Operation")
+            val productIndex = headers.indexOf("Product")
+            val coinIndex = headers.indexOf("Coin")
+            val changeIndex = headers.indexOf("Change")
 
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        val regex = Regex("\".+\"")
+            records.mapNotNull { record ->
+                val columns = record.split(",")
 
-        return records.map { record ->
-            val sanitizedRecords = record.replace(regex) {
-                it.value.replace(",", "")
-                    .replace("\"", "")
+                val operationValue = BybitEarnOperation.from(columns[operationIndex])
+                val productValue = BybitEarnProduct.from(columns[productIndex])
+                if (operationValue == BybitEarnOperation.Yield && productValue == product) {
+                    val utcTimeValue = columns[utcTimeIndex]
+                    val coinValue = columns[coinIndex]
+                    val changeValue = columns[changeIndex]
+
+                    val earnedAt = LocalDateTime.parse(utcTimeValue, formatter)
+                        .atZone(ZoneOffset.UTC)
+                        .withZoneSameInstant(ZoneId.systemDefault())
+                    val asset = Asset(coinValue)
+                    val amount = BigDecimal(changeValue)
+                    EarnRecord(
+                        earnedAt = earnedAt,
+                        asset = asset,
+                        amount = amount
+                    )
+                } else {
+                    null
+                }
             }
-            val columns = sanitizedRecords.split(",")
-
-            val assetEarnedValue = columns[assetEarnedIndex]
-            val yieldValue = columns[yieldIndex]
-            val distributionTimeValue = columns[distributionTimeIndex]
-
-            val distributedAt = LocalDateTime.parse(distributionTimeValue, formatter)
-                .atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.systemDefault())
-            val asset = Asset(assetEarnedValue)
-            val amount = BigDecimal(yieldValue)
-
-            DistributionRecord(
-                distributedAt = distributedAt,
-                asset = asset,
-                amount = amount
-            )
-        }
+        } ?: emptyList()
     }
 
-    fun importDeFiMiningRecords(): List<DistributionRecord> {
-        val file = File("${inputDirectory.path}/bybit_defi_mining_history.csv")
-        val lines = file.readLines()
-        val header = lines.first()
-        val headers = header.split(",")
-        val records = lines.subList(1, lines.size)
-
-        val effectiveUntilIndex = headers.indexOf("Effective Until (UTC)")
-        val yieldIndex = headers.indexOf("Yield")
-
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        val regex = Regex("\".+\"")
-
-        return records.map { record ->
-            val sanitizedRecords = record.replace(regex) {
-                it.value.replace(",", "")
-                    .replace("\"", "")
-            }
-            val columns = sanitizedRecords.split(",")
-
-            val effectiveUntilValue = columns[effectiveUntilIndex]
-            val yieldValue = columns[yieldIndex]
-
-            val distributedAt = LocalDateTime.parse(effectiveUntilValue, formatter)
-                .atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.systemDefault())
-            val asset = Asset(yieldValue.split(" ").last())
-            val amount = BigDecimal(yieldValue.split(" ").first())
-
-            DistributionRecord(
-                distributedAt = distributedAt,
-                asset = asset,
-                amount = amount
-            )
-        }
+    fun importFlexibleStakingRecords(): List<EarnRecord> {
+        return importEarnRecords(BybitEarnProduct.FlexibleStaking)
     }
 
-    fun importLaunchpoolRecords(): List<DistributionRecord> {
-        val file = File("${inputDirectory.path}/bybit_launchpool_history.csv")
-        val lines = file.readLines()
-        val header = lines.first()
-        val headers = header.split(",")
-        val records = lines.subList(1, lines.size)
-
-        val assetEarnedIndex = headers.indexOf("Asset Earned")
-        val yieldIndex = headers.indexOf("Yield")
-        val distributionTimeIndex = headers.indexOf("Distribution Time (UTC)")
-
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        val regex = Regex("\".+\"")
-
-        return records.map { record ->
-            val sanitizedRecords = record.replace(regex) {
-                it.value.replace(",", "")
-                    .replace("\"", "")
-            }
-            val columns = sanitizedRecords.split(",")
-
-            val assetEarnedValue = columns[assetEarnedIndex]
-            val yieldValue = columns[yieldIndex]
-            val distributionTimeValue = columns[distributionTimeIndex]
-
-            val distributedAt = LocalDateTime.parse(distributionTimeValue, formatter)
-                .atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.systemDefault())
-            val asset = Asset(assetEarnedValue)
-            val amount = BigDecimal(yieldValue)
-
-            DistributionRecord(
-                distributedAt = distributedAt,
-                asset = asset,
-                amount = amount
-            )
-        }
+    fun importDeFiMiningRecords(): List<EarnRecord> {
+        return importEarnRecords(BybitEarnProduct.DeFiMining)
     }
 
-    fun importAirdropRecords(): List<DistributionRecord> {
-        val file = File("${inputDirectory.path}/bybit_airdrop_history.csv")
+    fun importLaunchpoolRecords(): List<EarnRecord> {
+        return importEarnRecords(BybitEarnProduct.Launchpool)
+    }
+
+    fun importAirdropRecords(): List<EarnRecord> {
+        val file = File("${airdropDirectory.path}/bybit_airdrop_history.csv")
         val lines = file.readLines()
         val header = lines.first()
         val headers = header.split(",")
@@ -153,13 +93,13 @@ object BybitImporter {
             val quantityValue = columns[quantityIndex]
             val dateAndTimeValue = columns[dateAndTimeIndex]
 
-            val distributedAt = LocalDateTime.parse(dateAndTimeValue, formatter)
+            val earnedAt = LocalDateTime.parse(dateAndTimeValue, formatter)
                 .atZone(ZoneId.systemDefault())
             val asset = Asset(coinValue)
             val amount = BigDecimal(quantityValue)
 
-            DistributionRecord(
-                distributedAt = distributedAt,
+            EarnRecord(
+                earnedAt = earnedAt,
                 asset = asset,
                 amount = amount
             )
