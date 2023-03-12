@@ -69,7 +69,7 @@ object BybitImporter {
     }
 
     fun importAirdropRecords(): List<EarnRecord> {
-        val file = File("${airdropDirectory.path}/bybit_airdrop_history.csv")
+        val file = File("${airdropDirectory.path}/bybit_airdrop.csv")
         val lines = file.readLines()
         val header = lines.first()
         val headers = header.split(",")
