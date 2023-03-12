@@ -42,7 +42,7 @@ object BybitImporter {
                     val earnedAt = LocalDateTime.parse(utcTimeValue, formatter)
                         .atZone(ZoneOffset.UTC)
                         .withZoneSameInstant(ZoneId.systemDefault())
-                    val asset = Asset(coinValue)
+                    val asset = Asset.from(coinValue)
                     val amount = BigDecimal(changeValue)
                     EarnRecord(
                         earnedAt = earnedAt,
@@ -95,7 +95,7 @@ object BybitImporter {
 
             val earnedAt = LocalDateTime.parse(dateAndTimeValue, formatter)
                 .atZone(ZoneId.systemDefault())
-            val asset = Asset(coinValue)
+            val asset = Asset.from(coinValue)
             val amount = BigDecimal(quantityValue)
 
             EarnRecord(

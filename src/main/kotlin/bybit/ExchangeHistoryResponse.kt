@@ -36,11 +36,11 @@ data class ExchangeHistoryResponse(
                 exchangedAt = LocalDateTime.parse(it.createdAt, formatter)
                     .atZone(ZoneOffset.UTC)
                     .withZoneSameInstant(ZoneId.systemDefault()),
-                symbol = Symbol(Asset(it.toCoin), Asset(it.fromCoin)),
+                symbol = Symbol(Asset.from(it.toCoin), Asset.from(it.fromCoin)),
                 fromAmount = it.fromAmount,
                 toAmount = it.toAmount,
                 feeAmount = it.fromFee,
-                feeAsset = Asset(it.fromCoin)
+                feeAsset = Asset.from(it.fromCoin)
             )
         }
     }
